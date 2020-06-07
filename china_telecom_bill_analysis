@@ -1,0 +1,43 @@
+#!/bin/bash
+total=0
+declare -a array
+while IFS='' read -r line || [[ -n "$line" ]]; do
+  idx=$(echo $line|cut -d' ' -f1)
+  date=$(echo $line|awk '{print $2}')
+  vol=$(echo $line|awk '{print $5}')
+  day=$(echo $date|cut -d '/' -f1|cut -d'0' -f2)
+  if [[ $day != $(echo $list|cut -d' ' -f1) ]]
+  then
+    list=$day" "$list
+  fi
+  if [[ -n $(echo $vol|grep M) ]]
+  then
+    volM=$(echo $vol|cut -d 'M' -f1)
+    volK=$(echo $vol|cut -d 'M' -f2|cut -d 'K' -f1)
+  else
+    volM=0
+    volK=$(echo $vol|cut -d 'K' -f1)
+  fi
+  voln=$((volM * 1024 + volK))
+  # echo "before is ${array[$day]}"
+  if [[ -z "${array[$day]}" ]]
+  then
+    array[$day]=0
+  fi
+  array[$day]=$(($voln + ${array[$day]}))
+  # echo "after is ${array[$day]}"
+  total=$((total + voln))
+    # echo "Text read from file: $idx - $day $volM.$volK = $voln"
+done < "$1"
+
+echo $total = $((total / 1024 )) . $(( total % 1024 )) M
+
+verify=0
+for i in $list
+do
+  v=${array[$i]}
+  verify=$((verify + v))
+  echo "day $i cost $v = $((v/1024)).$((v%1024)) M"
+  #access each element as $i. . .
+done 
+echo $verify = $((verify /1024)).$((verify%1024)) M
